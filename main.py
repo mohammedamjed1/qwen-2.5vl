@@ -1,24 +1,17 @@
-from fastapi import FastAPI, Request
-from transformers import AutoProcessor, AutoModelForCausalLM
+from fastapi import FastAPI
+from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
-app = FastAPI(title="EVO AI - Qwen2.5-VL")
+app = FastAPI()
 
-# تحميل النموذج من Hugging Face
-processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL", trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(
-    "Qwen/Qwen2.5-VL",
-    torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
-    device_map="auto",
-    trust_remote_code=True
-)
-model.eval()
+model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16, device_map="auto")
 
-@app.post("/chat")
-async def chat(request: Request):
-    data = await request.json()
-    user_message = data.get("message", "")
-    inputs = processor(text=user_message, images=None, return_tensors="pt").to(model.device)
-    outputs = model.generate(**inputs, max_new_tokens=256)
-    reply = processor.batch_decode(outputs, skip_special_tokens=True)[0]
-    return {"reply": reply}
+@app.post("/run")
+async def run_job(input: dict):
+    prompt = input.get("prompt", "")
+    inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+    outputs = model.generate(**inputs, max_new_tokens=200)
+    result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return {"output": result}
