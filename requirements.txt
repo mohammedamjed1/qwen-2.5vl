@@ -5,3 +5,4 @@ fastapi
 uvicorn
 pillow
 huggingface_hub
+
