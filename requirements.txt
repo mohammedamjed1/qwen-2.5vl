@@ -1,6 +1,8 @@
 torch
 transformers>=4.43.0
 accelerate
+timm
+qwen-vl-utils
 fastapi
 uvicorn
 Pillow
